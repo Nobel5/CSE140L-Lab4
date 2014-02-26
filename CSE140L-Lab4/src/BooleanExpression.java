@@ -146,7 +146,7 @@ public class BooleanExpression {
 				}
 			}
 		}
-		System.out.println("1st");
+		
 		List<List<BitVector>> productOfSums = new ArrayList<List<BitVector>>();
 		for (Map.Entry<Long,List<Long>> entry : minMap.entrySet()) {
 			List<BitVector> list = new ArrayList<BitVector>();
@@ -157,17 +157,18 @@ public class BooleanExpression {
 			}
 			productOfSums.add(list);
 		}
-		System.out.println("2st");
 		
 		int first=0;
 		int second=1;
 		while (productOfSums.size()>1) {
+			// multiplication
 			List<BitVector> alpha=productOfSums.get(first);
 			List<BitVector> beta=productOfSums.get(second);
 			List<BitVector> product=new ArrayList<BitVector>();
 			for(int j=0;j<alpha.size();j++){
+				BitVector jVector=alpha.get(j);
 				for(int k=0;k<beta.size();k++){
-					product.add(alpha.get(j).union(beta.get(k)));
+					product.add(jVector.union(beta.get(k)));
 				}
 			}
 			// absorption
@@ -175,12 +176,14 @@ public class BooleanExpression {
 				BitVector bob=product.get(j);
 				for(int k=0;k<product.size();k++){
 					BitVector debbie=product.get(k);
-					if(bob.equals(debbie))
+					if(j==k){
 						continue;
+					}
 					if(bob.intersection(debbie).equals(bob)){
 						product.remove(debbie);
-						if(j>k)
+						if(j>k){
 							j--;
+						}
 						k--;
 					}
 				}
@@ -190,14 +193,16 @@ public class BooleanExpression {
 			productOfSums.remove(second);
 			first++;
 			second++;
-			if (first>=productOfSums.size() || second>=productOfSums.size()) {
+			if(first>=productOfSums.size()) {
 				first=0;
 				second=1;
+			} else if (second>=productOfSums.size()) {
+				second=0;
 			}
+			
 			System.out.println(productOfSums.size());
 		}
 		
-		System.out.println("3st");
 		int minCar=implicantList.size();
 		int minImp = -1;
 
@@ -211,13 +216,7 @@ public class BooleanExpression {
 		}
 		BitVector bv = finalSumOfProducts.get(minImp);
 		List<Implicant> newList = new ArrayList<Implicant>();
-//		for (int i=0;i<implicantList.size();i++) {
-//			BitVector atI = new BitVector(implicantList.size());
-//			atI.set(i);
-//			if (!atI.intersection(bv).isZero()) {
-//				newList.add(implicantList.get(i));
-//			}
-//		}
+
 		for (int i=0;i<bv.getSize();i++) {
 			if (bv.exists(i)) {
 				newList.add(implicantList.get(i));
@@ -296,16 +295,17 @@ public class BooleanExpression {
 	 */
 	private void findEssentials () {
 		for (int i=0;i<mintermsNeededToCover.size();i++) {
-			if(i<0)
+			if (i<0) {
 				System.out.println(i);
+			}
 			Long l = mintermsNeededToCover.get(i);
 			int location;
 			if (-1 != (location = essentialPrime(l))) {
 				Pair p;
 				essentials.add(p = pairs.remove(location));
-				for(int d=0;d<p.getImplicant().getMinterms().size();d++){
+				for (int d=0;d<p.getImplicant().getMinterms().size();d++) {
 					Long g= p.getImplicant().getMinterms().get(d);
-					if(mintermsNeededToCover.indexOf(g)<=i&&i>=0)
+					if (mintermsNeededToCover.indexOf(g)<=i&&i>=0)
 						i--;
 					mintermsNeededToCover.remove(g);
 					
@@ -331,7 +331,7 @@ public class BooleanExpression {
 					continue;
 				}
 				BitVector bi=bob.intersection(pairs.get(j).getBitVector());
-				if(pairs.get(j).getBitVector().equals(bi)){
+				if(pairs.get(j).getBitVector().equals(bi)) {
 					pairs.remove(j);
 					if (j<=i) {
 						i--;
@@ -352,8 +352,8 @@ public class BooleanExpression {
 		List<Pare> pare=new ArrayList<Pare>();
 		for(int i=0;i<mintermsNeededToCover.size();i++){
 			BitVector b = new BitVector(pairs.size());
-			for (int j=0; j<pairs.size(); j++) {
-				if (pairs.get(j).getBitVector().exists(mintermsNeededToCover.get(i).intValue())) {
+			for(int j=0; j<pairs.size(); j++){
+				if(pairs.get(j).getBitVector().exists(mintermsNeededToCover.get(i).intValue())){
 					b.set(j);
 				}
 			}
@@ -381,9 +381,7 @@ public class BooleanExpression {
 					pare.remove(doug);
 					
 				}
-			
 			}
-			
 		}
 	}
 }
