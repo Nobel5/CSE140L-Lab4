@@ -2,6 +2,7 @@ import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +19,7 @@ public class BooleanExpression {
 	public static final String alphabet = "abcdefghijklmnopqrstuvwxyz";
 	public List<Pair> pairs = new ArrayList<Pair>();
 	public List<Pair> essentials = new ArrayList<Pair>();
+	public List<Implicant> cyclicOre = new ArrayList<Implicant>();
 	
 	private void initBooleanExpression(int numVars)
 	{
@@ -112,18 +114,15 @@ public class BooleanExpression {
 				prevSize2=pairs.size();
 				this.findEssentials();
 			}
-			System.out.println("pairs:"+pairs.size());
 			this.rowDomination();
-			System.out.println("rowpairs:"+pairs.size());
 			this.colDomination();
-			System.out.println("colpairs:"+pairs.size());
-			System.out.println("essential:"+essentials.size());
 		}
 		
 		implicantList.clear();
 		for (Pair p : pairs) {
 			if (!p.getBitVector().isZero()){
 				implicantList.add(p.getImplicant());
+				cyclicOre.add(p.getImplicant());
 			}
 		}
 		for(Pair p:essentials){
@@ -133,53 +132,80 @@ public class BooleanExpression {
 	
 	public void doPetricksMethod()
 	{
-		Map<Long,List<Long>> minMap = new HashMap<Long,List<Long>>();
-		for(int i=0; i<implicantList.size(); i++) {
-			Implicant imp = implicantList.get(i);
-			for (Long min : imp.getMinterms()) {
-				if(minMap.containsKey(min)) {
-					minMap.get(min).add(new Long(i));
-				} else {
-					List<Long> li = new ArrayList<Long>();
-					li.add(new Long(i));
-					minMap.put(min, li);
-				}
+		System.out.println("essential:"+essentials.size());
+		System.out.println("cyclicOre:"+cyclicOre.size());
+		System.out.println("minterms:"+mintermsNeededToCover.size());
+		if (0==cyclicOre.size()) {
+			implicantList.clear();
+			for(Pair p:essentials){
+				implicantList.add(p.getImplicant());
 			}
+			return;
 		}
-		
-		List<List<BitVector>> productOfSums = new ArrayList<List<BitVector>>();
-		for (Map.Entry<Long,List<Long>> entry : minMap.entrySet()) {
-			List<BitVector> list = new ArrayList<BitVector>();
-			for (int j=0; j<entry.getValue().size(); j++) {
-				BitVector b = new BitVector(implicantList.size());
-				b.set(entry.getValue().get(j).intValue());
-				list.add(b);
+		List<List<BitVector>> productOfSums = new LinkedList<List<BitVector>>();
+		for(int i=0;i<mintermsNeededToCover.size();i++){
+			List<BitVector> list=new ArrayList<BitVector>();
+			for(int j=0;j<cyclicOre.size();j++){
+				BitVector b=new BitVector(cyclicOre.size());
+				if(cyclicOre.get(j).getMinterms().contains(mintermsNeededToCover.get(i))){
+					b.set(j);
+					list.add(b);
+				}
+					
 			}
 			productOfSums.add(list);
 		}
 		
-		int first=0;
-		int second=1;
+//		Map<Long,List<Long>> minMap = new HashMap<Long,List<Long>>();
+//		for(int i=0; i<cyclicOre.size(); i++) {
+//			Implicant imp = cyclicOre.get(i);
+//			for (Long min : imp.getMinterms()) {
+//				if(minMap.containsKey(min)) {
+//					minMap.get(min).add(new Long(i));
+//				} else {
+//					List<Long> li = new ArrayList<Long>();
+//					li.add(new Long(i));
+//					minMap.put(min, li);
+//				}
+//			}
+//		}
+//		System.out.println("map:"+minMap.size());
+//		
+//		List<List<BitVector>> productOfSums = new ArrayList<List<BitVector>>();
+//		for (Map.Entry<Long,List<Long>> entry : minMap.entrySet()) {
+//			List<BitVector> list = new ArrayList<BitVector>();
+//			for (int j=0; j<entry.getValue().size(); j++) {
+//				BitVector b = new BitVector(cyclicOre.size());
+//				b.set(entry.getValue().get(j).intValue());
+//				list.add(b);
+//			}
+//			productOfSums.add(list);
+//		}
+		System.out.println("initial:"+productOfSums.size());
 		while (productOfSums.size()>1) {
-			// multiplication
-			List<BitVector> alpha=productOfSums.get(first);
-			List<BitVector> beta=productOfSums.get(second);
+			List<BitVector> alpha=productOfSums.remove(0);
+			System.out.println("alpha"+alpha.size());
+			List<BitVector> beta=productOfSums.remove(0);
+			System.out.println("beta"+beta.size());
 			List<BitVector> product=new ArrayList<BitVector>();
 			for(int j=0;j<alpha.size();j++){
 				BitVector jVector=alpha.get(j);
 				for(int k=0;k<beta.size();k++){
+					BitVector dog=jVector.union(beta.get(k));	
 					product.add(jVector.union(beta.get(k)));
 				}
 			}
 			// absorption
+			System.out.println("absorption");
+			System.out.println("pr"+product.size());
 			for(int j=0;j<product.size();j++){
 				BitVector bob=product.get(j);
 				for(int k=0;k<product.size();k++){
-					BitVector debbie=product.get(k);
 					if(j==k){
 						continue;
 					}
-					if(bob.intersection(debbie).equals(bob)){
+					BitVector debbie=product.get(k);
+					if(debbie.intersection(bob).equals(bob)){
 						product.remove(debbie);
 						if(j>k){
 							j--;
@@ -188,20 +214,55 @@ public class BooleanExpression {
 					}
 				}
 			}
-			
-			productOfSums.set(first, product);
-			productOfSums.remove(second);
-			first++;
-			second++;
-			if(first>=productOfSums.size()) {
-				first=0;
-				second=1;
-			} else if (second>=productOfSums.size()) {
-				second=0;
-			}
-			
+			productOfSums.add(product);
 			System.out.println(productOfSums.size());
 		}
+
+		
+		
+//		int first=0;
+//		int second=1;
+//		while (productOfSums.size()>1) {
+//			// multiplication
+//			List<BitVector> alpha=productOfSums.get(first);
+//			List<BitVector> beta=productOfSums.get(second);
+//			List<BitVector> product=new ArrayList<BitVector>();
+//			for(int j=0;j<alpha.size();j++){
+//				BitVector jVector=alpha.get(j);
+//				for(int k=0;k<beta.size();k++){
+//					product.add(jVector.union(beta.get(k)));
+//				}
+//			}
+//			// absorption
+//			for(int j=0;j<product.size();j++){
+//				BitVector bob=product.get(j);
+//				for(int k=0;k<product.size();k++){
+//					BitVector debbie=product.get(k);
+//					if(j==k){
+//						continue;
+//					}
+//					if(bob.intersection(debbie).equals(bob)){
+//						product.remove(debbie);
+//						if(j>k){
+//							j--;
+//						}
+//						k--;
+//					}
+//				}
+//			}
+//			
+//			productOfSums.set(first, product);
+//			productOfSums.remove(second);
+//			first++;
+//			second++;
+//			if(first>=productOfSums.size()) {
+//				first=0;
+//				second=1;
+//			} else if (second>=productOfSums.size()) {
+//				second=0;
+//			}
+//			System.out.println(productOfSums.size());
+//		}
 		
 		int minCar=implicantList.size();
 		int minImp = -1;
@@ -224,6 +285,9 @@ public class BooleanExpression {
 		}
 		
 		implicantList=newList;
+		for(Pair p:essentials){
+			implicantList.add(p.getImplicant());
+		}
 	}
 	
 	/*
@@ -379,7 +443,6 @@ public class BooleanExpression {
 					if(j<i)
 						i--;
 					pare.remove(doug);
-					
 				}
 			}
 		}
