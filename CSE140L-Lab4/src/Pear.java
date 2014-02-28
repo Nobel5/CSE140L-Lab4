@@ -1,11 +1,11 @@
 import java.util.List;
 
-
 public class Pear {
-	
+
 	private Implicant i;
 	private boolean b;
-	
+	private BitVector v;
+
 	public Pear(Implicant imp, boolean boo) {
 		this.i = imp;
 		this.b = boo;
@@ -19,7 +19,8 @@ public class Pear {
 	}
 
 	/**
-	 * @param imp the implicant to set
+	 * @param imp
+	 *            the implicant to set
 	 */
 	public void setImplicant(Implicant imp) {
 		this.i = imp;
@@ -33,18 +34,19 @@ public class Pear {
 	}
 
 	/**
-	 * @param boo the Boolean to set
+	 * @param boo
+	 *            the Boolean to set
 	 */
 	public void setBoolean(boolean boo) {
 		this.b = boo;
 	}
 
 	public boolean equals(Pear p) {
-		boolean a = i.getMSB()==p.getImplicant().getMSB();
-		boolean b = i.getLSB()==p.getImplicant().getLSB();
-		return a&&b;
+		boolean a = i.getMSB() == p.getImplicant().getMSB();
+		boolean b = i.getLSB() == p.getImplicant().getLSB();
+		return a && b;
 	}
-	
+
 	public boolean pearChecker(List<Pear> list) {
 		for (Pear p : list) {
 			if (p.equals(this)) {
@@ -52,5 +54,13 @@ public class Pear {
 			}
 		}
 		return false;
+	}
+
+	public BitVector getBitVector() {
+		return v;
+	}
+
+	public void setBitVector(BitVector v) {
+		this.v = v;
 	}
 }
